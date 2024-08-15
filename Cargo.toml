@@ -1,0 +1,35 @@
+[package]
+name = "url-shortener"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Logging dependencies
+tracing = { version = "0.1", features = ["log"] }
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
+
+# Web server dependencies
+tokio = { version = "1", features = ["full"] }
+axum = { version = "0.7", features = ["tracing", "macros"] }
+tower-http = { version = "0.5", features = ["fs", "trace"] }
+http = "1"
+
+# Serde dependencies
+serde = { version = "1", features = ["derive"] }
+
+# Key-value store dependencies
+redis = { version = "0.26", features = ["tokio-rustls-comp"] }
+deadpool-redis = "0.16"
+
+# Reqwest dependencies
+reqwest = { version = "0.12", default-features = false, features = [ "charset", "http2", "json", "rustls-tls" ] }
+
+# Database
+sea-orm = { version = "1", features = ["sqlx-postgres", "runtime-tokio-rustls"] } 
+
+# Other
+uuid = { version =  "1", features = ["serde", "v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1"
+dotenv = "0.15"
+
