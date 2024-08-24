@@ -8,6 +8,7 @@ pub struct Config {
     pub client_id: String,
     pub client_secret: String,
     pub redirect_uri: String,
+    pub allowed_origins: Vec<String>,
 }
 
 impl Config {
@@ -24,6 +25,11 @@ impl Config {
             client_id: env::var("CLIENT_ID").expect("CLIENT_ID must be set"),
             client_secret: env::var("CLIENT_SECRET").expect("CLIENT_SECRET must be set"),
             redirect_uri: env::var("REDIRECT_URI").expect("REDIRECT_URI must be set"),
+            allowed_origins: env::var("ALLOWED_ORIGINS")
+                .expect("ALLOWED_ORIGINS must be set")
+                .split(',')
+                .map(String::from)
+                .collect(),
         }
     }
 }

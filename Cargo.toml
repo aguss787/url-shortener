@@ -11,7 +11,7 @@ tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 # Web server dependencies
 tokio = { version = "1", features = ["full"] }
 axum = { version = "0.7", features = ["tracing", "macros"] }
-tower-http = { version = "0.5", features = ["fs", "trace"] }
+tower-http = { version = "0.5", features = ["fs", "trace", "cors"] }
 http = "1"
 
 # Serde dependencies
