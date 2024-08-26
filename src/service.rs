@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use axum::response::{IntoResponse, Response};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, QueryFilter,
@@ -57,15 +59,74 @@ impl From<QueryError> for Response {
     }
 }
 
+pub enum RedirectKeyValidationFailed {
+    TooLong,
+    InvalidCharacters(Vec<char>),
+}
+
+impl From<RedirectKeyValidationFailed> for Response {
+    fn from(value: RedirectKeyValidationFailed) -> Self {
+        match value {
+            RedirectKeyValidationFailed::TooLong => (
+                http::StatusCode::BAD_REQUEST,
+                "too long, maximum length of a key is 100",
+            )
+                .into_response(),
+            RedirectKeyValidationFailed::InvalidCharacters(chars) => {
+                let invalid_chars: String = chars.into_iter().collect();
+                (
+                    http::StatusCode::BAD_REQUEST,
+                    format!("invalid characters: {}", invalid_chars),
+                )
+                    .into_response()
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct RedirectKey(String);
+
+impl Deref for RedirectKey {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl TryFrom<String> for RedirectKey {
+    type Error = RedirectKeyValidationFailed;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if value.len() > 100 {
+            return Err(RedirectKeyValidationFailed::TooLong);
+        }
+
+        let invalid_chars: Vec<char> = value
+            .chars()
+            .filter(|c| !c.is_ascii_alphanumeric() && *c != '-' && *c != '_')
+            .collect();
+
+        if !invalid_chars.is_empty() {
+            return Err(RedirectKeyValidationFailed::InvalidCharacters(
+                invalid_chars,
+            ));
+        }
+
+        Ok(Self(value))
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct NewUrlRedirect {
     user_email: String,
-    key: String,
+    key: RedirectKey,
     target: String,
 }
 
 impl NewUrlRedirect {
-    pub fn new(user_email: String, key: String, target: String) -> Self {
+    pub fn new(user_email: String, key: RedirectKey, target: String) -> Self {
         Self {
             user_email,
             key,
@@ -79,7 +140,7 @@ impl From<NewUrlRedirect> for url_redirects::ActiveModel {
         url_redirects::ActiveModel {
             id: Set(uuid::Uuid::new_v4()),
             user_email: Set(value.user_email),
-            key: Set(value.key),
+            key: Set(value.key.0),
             target: Set(value.target),
             ..Default::default()
         }
@@ -145,7 +206,7 @@ impl UrlService {
             .map(Into::into))
     }
 
-    pub async fn insert(&self, new_url: NewUrlRedirect) -> Result<UrlRedirect, InsertError> {
+    pub async fn create(&self, new_url: NewUrlRedirect) -> Result<UrlRedirect, InsertError> {
         url_redirects::ActiveModel::from(new_url)
             .insert(&self.db)
             .await
@@ -182,7 +243,7 @@ impl UrlService {
         let Some(url) = url else { return Ok(None) };
 
         let mut active_model = url_redirects::ActiveModel::from(url);
-        active_model.key = Set(new_url.key);
+        active_model.key = Set(new_url.key.0);
         active_model.target = Set(new_url.target);
         active_model.updated_at = Set(chrono::Utc::now().into());
 

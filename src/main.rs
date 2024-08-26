@@ -97,12 +97,12 @@ async fn main() -> Result<(), std::io::Error> {
             get(get_url).delete(delete_url).patch(update_url),
         )
         .with_state(Arc::new(services))
+        .layer(cors)
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::new().level(tracing::Level::INFO))
                 .on_response(DefaultOnResponse::new().level(tracing::Level::INFO)),
-        )
-        .layer(cors);
+        );
 
     tracing::info!("Listening on 0.0.0.0:{port}");
     let listener = tokio::net::TcpListener::bind(("0.0.0.0", port))
@@ -132,9 +132,9 @@ async fn new_url(
 ) -> Result<Json<UrlRedirect>, Response> {
     service
         .url
-        .insert(NewUrlRedirect::new(
+        .create(NewUrlRedirect::new(
             requester.email,
-            new_url.key,
+            new_url.key.try_into()?,
             new_url.target,
         ))
         .await
@@ -166,7 +166,7 @@ async fn update_url(
         .url
         .update(
             id,
-            NewUrlRedirect::new(requester.email, new_url.key, new_url.target),
+            NewUrlRedirect::new(requester.email, new_url.key.try_into()?, new_url.target),
         )
         .await
         .map_err(Into::into)
