@@ -1,5 +1,6 @@
 /target
 /migration/target
+/data
 
 .env
 
