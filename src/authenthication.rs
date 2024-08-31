@@ -129,6 +129,7 @@ impl AuthenticationService {
 
         let response = match result.status() {
             StatusCode::UNAUTHORIZED => Err(AuthenticationError::Unauthorized),
+            StatusCode::BAD_REQUEST => Err(AuthenticationError::Unauthorized),
             StatusCode::OK => result
                 .json::<Profile>()
                 .await
