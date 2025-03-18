@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use axum::response::{IntoResponse, Response};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, QueryFilter,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, ModelTrait, QueryFilter,
     QueryOrder, QuerySelect, Set,
 };
 
@@ -152,12 +152,10 @@ pub struct UrlService {
 }
 
 impl UrlService {
-    pub async fn new(postgres_url: &str) -> Self {
-        Self {
-            db: sea_orm::Database::connect(postgres_url)
-                .await
-                .expect("unable to connect to database"),
-        }
+    pub async fn new(postgres_url: &str) -> Result<Self, DbErr> {
+        Ok(Self {
+            db: sea_orm::Database::connect(postgres_url).await?,
+        })
     }
 }
 

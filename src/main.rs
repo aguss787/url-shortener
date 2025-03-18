@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{error::Error, sync::Arc};
 
 use authenthication::{AuthenticationService, Requester};
 use axum::{
@@ -45,7 +45,7 @@ impl Services {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), std::io::Error> {
+async fn main() -> Result<(), Box<dyn Error>> {
     dotenv::from_filename(".env").ok();
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
@@ -57,11 +57,10 @@ async fn main() -> Result<(), std::io::Error> {
     let config = Config::read_env();
     let port = config.port;
 
-    let kvs_pool =
-        Arc::new(kvs_pool(&config.kvs_url).expect("Failed to create KVS connection pool"));
+    let kvs_pool = Arc::new(kvs_pool(&config.kvs_url)?);
 
     let services = Services::new(
-        UrlService::new(&config.postgres_url).await,
+        UrlService::new(&config.postgres_url).await?,
         AuthenticationService::new(
             config.agus_dev_sso_host,
             config.client_id,
@@ -82,7 +81,8 @@ async fn main() -> Result<(), std::io::Error> {
             config
                 .allowed_origins
                 .iter()
-                .map(|origin| HeaderValue::from_str(origin).expect("invalid origin")),
+                .map(|origin| HeaderValue::from_str(origin))
+                .collect::<Result<Vec<_>, _>>()?,
         ))
         .allow_headers(vec![AUTHORIZATION, CONTENT_TYPE])
         .allow_credentials(true);
