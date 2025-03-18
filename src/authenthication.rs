@@ -138,7 +138,7 @@ impl AuthenticationService {
                 tracing::error!("unexpected status code: {:?}", result.status());
 
                 Err(AuthenticationError::Internal(Box::new(
-                    std::io::Error::new(std::io::ErrorKind::Other, "unexpected status code"),
+                    std::io::Error::other("unexpected status code"),
                 )))
             }
         }?;
@@ -202,7 +202,7 @@ impl AuthenticationService {
                 tracing::error!("unexpected status code: {:?}", result.status());
 
                 Err(AuthenticationError::Internal(Box::new(
-                    std::io::Error::new(std::io::ErrorKind::Other, "unexpected status code"),
+                    std::io::Error::other("unexpected status code"),
                 )))
             }
         }?;
